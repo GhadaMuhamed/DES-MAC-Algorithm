@@ -36,7 +36,7 @@ public class MAC {
 		byte[] tbytes=text.getBytes();
 		String binary = Tobinary(tbytes);
 		//System.out.println (binary);
-		String Si=	XOR(Keyplus,ipad);
+		String Si=XOR(Keyplus,ipad);
 		String S0=XOR(Keyplus,opad);
 
 		//Check if the text can be divided to l blocks of size b bits 
@@ -68,15 +68,12 @@ public class MAC {
 		md.reset();
 		md.update(Temp2.getBytes());
 		byte[] mDigest = md.digest();
-		BigInteger no = new BigInteger(1, mDigest);
-		String MD = no.toString(16);
-		while (MD.length() < 32) {
-			MD = "0" + MD;
-		}
-
-
-
-
+		 StringBuilder sb = new StringBuilder();
+		    for (byte b : mDigest) {
+		        sb.append(String.format("%02X", b));
+		    }
+		String MD =sb.toString();
+		
 		return MD;
 	}
 
