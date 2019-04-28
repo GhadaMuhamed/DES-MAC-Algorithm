@@ -30,29 +30,18 @@ public class Receiver {
         //String msg = (String) readFromFile("SentMsg.txt");
         //Integer mode = Character.getNumericValue(msg.charAt(0));
         int mode = Integer.valueOf(readFromFile("mode.txt"));
-        String Text = readFromFile("sentMsg.txt");
-        
-        String HM=Text.substring(Text.length()-56,Text.length());
-        String msg=Text.substring(0,Text.length()-56);
-        
+        String msg = readFromFile("sentMsg.txt");
+        String plaintext = new String();
         if (mode == 1)
-            receiveECB(msg);
+            plaintext = receiveECB(msg);
         else if (mode == 2)
-            receiveCBC(msg);
+            plaintext = receiveCBC(msg);
         else if (mode == 3)
-            receiveCFB(msg);
+            plaintext = receiveCFB(msg);
         else if (mode == 4)
-            receiveOFB(msg);
-        else receiveCnt(msg);
-        
-        String HMnew;  //compute the mac for decrypted message
-        if(HM.equals(HMnew)){
-            System.out.println("The message is valid");
-        }
-        else{
-            System.out.println("The message is invalid");
-        }
-
+            plaintext = receiveOFB(msg);
+        else plaintext = receiveCnt(msg);
+        System.out.println(plaintext);
     }
 
    static String findTwoscomplement(String s)
@@ -131,10 +120,10 @@ public class Receiver {
        return Long.valueOf(s,16);
     }
 
-    public void receiveOFB(String msg) throws Exception {
+    public String receiveOFB(String msg) throws Exception {
+        String res = "";
         String tmp = "";
         Long nonce = IV;
-        PrintWriter pw = new PrintWriter("receivedMsg.txt");
         for (int i=0;i<msg.length();++i){
             tmp+= msg.charAt(i);
             if (tmp.length() == 11){
@@ -143,15 +132,16 @@ public class Receiver {
                 nonce = num;
                 num ^= toBeDec;
                 List<Byte> asciiBytes = longtoBytes(num);
-                pw.print(bytesToString(asciiBytes));
+                res += bytesToString(asciiBytes);
                 tmp = "";
             }
         }
-        pw.close();
+        return res;
+
     }
-    public void receiveCnt(String msg) throws Exception {
+    public String receiveCnt(String msg) throws Exception {
+        String res = "";
         String tmp = "";
-        PrintWriter pw = new PrintWriter("receivedMsg.txt");
         Long counter = IV;
         BigInteger bg = new BigInteger("18446744073709551615");
         for (int i=0;i<msg.length();++i){
@@ -164,16 +154,17 @@ public class Receiver {
                 else counter++;
                 num ^= toBeDec;
                 List<Byte> asciiBytes = longtoBytes(num);
-                pw.print(bytesToString(asciiBytes));
+                res += bytesToString(asciiBytes);
                 tmp = "";
             }
         }
-        pw.close();
+        return res;
+
     }
 
-    public void receiveCFB(String msg) throws Exception {
+    public String receiveCFB(String msg) throws Exception {
+        String res = "";
         String tmp = "";
-        PrintWriter pw = new PrintWriter("receivedMsg.txt");
         Long last = IV;
         Long lastCiph = IV;
         for (int i=0;i<msg.length();i+=2){
@@ -185,14 +176,14 @@ public class Receiver {
                 num >>>= (64-8);
                 num^= toBeEnc;
                 lastCiph = toBeEnc;
-                pw.print((char) num.intValue());
+                res += (char) num.intValue();
         }
-        pw.close();
+        return res;
     }
 
-    public void receiveCBC(String msg) throws Exception {
+    public String receiveCBC(String msg) throws Exception {
+        String res= "";
         String tmp = "";
-        PrintWriter pw = new PrintWriter("receivedMsg.txt");
         Long last = IV;
         for (int i=0;i<msg.length();++i){
             tmp+= msg.charAt(i);
@@ -202,27 +193,27 @@ public class Receiver {
                 num ^= last;
                 last = toBeDec;
                 List<Byte> asciiBytes = longtoBytes(num);
-                pw.print(bytesToString(asciiBytes));
+                res += bytesToString(asciiBytes);
                 tmp = "";
             }
         }
-        pw.close();
+        return res;
     }
 
 
-    public void receiveECB(String msg) throws Exception {
+    public String receiveECB(String msg) throws Exception {
+        String res = "";
         String tmp = "";
-        PrintWriter pw = new PrintWriter("receivedMsg.txt");
         for (int i=0;i<msg.length();++i){
            tmp+= msg.charAt(i);
            if (tmp.length() == 11){
                 Long num = des.decrypt(Base64ToLong(tmp), key);
                 List<Byte> asciiBytes = longtoBytes(num);
-                pw.print(bytesToString(asciiBytes));
+                res += bytesToString(asciiBytes);
                 tmp = "";
            }
         }
-        pw.close();
+        return res;
     }
 
 }
