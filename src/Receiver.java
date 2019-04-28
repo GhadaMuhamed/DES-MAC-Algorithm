@@ -30,7 +30,10 @@ public class Receiver {
         //String msg = (String) readFromFile("SentMsg.txt");
         //Integer mode = Character.getNumericValue(msg.charAt(0));
         int mode = Integer.valueOf(readFromFile("mode.txt"));
-        String msg = readFromFile("sentMsg.txt");
+        String Text = readFromFile("sentMsg.txt");
+        String HM=Text.substring(Text.length()-56,Text.length());
+        String msg=Text.substring(0,Text.length()-56);
+        
         String plaintext = new String();
         if (mode == 1)
             plaintext = receiveECB(msg);
@@ -41,7 +44,36 @@ public class Receiver {
         else if (mode == 4)
             plaintext = receiveOFB(msg);
         else plaintext = receiveCnt(msg);
+        
+        String macKey = getMACKey();
+        MAC HMAC = new MAC(macKey);
+        String HMnew = HMAC.getHMAC(plaintext);
+        
+        if(!HMnew.equals(HM)){
+	    	  System.out.println("The message is invalid!");
+	      }
+        else{
         System.out.println(plaintext);
+        }
+    }
+    
+    private String getMACKey(){  // check what is the format of the message!
+
+        //Read the sent message!
+        Scanner scanner;
+        File file = new File("secretKey.txt");
+        String key="";
+
+        try{
+            scanner=new Scanner(file);
+            key = scanner.nextLine();
+
+            scanner.close();
+        }
+        catch (FileNotFoundException er) {
+            er.printStackTrace();
+        }
+        return key;
     }
 
    static String findTwoscomplement(String s)
