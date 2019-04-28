@@ -30,7 +30,11 @@ public class Receiver {
         //String msg = (String) readFromFile("SentMsg.txt");
         //Integer mode = Character.getNumericValue(msg.charAt(0));
         int mode = Integer.valueOf(readFromFile("mode.txt"));
-        String msg = readFromFile("sentMsg.txt");
+        String Text = readFromFile("sentMsg.txt");
+        
+        String HM=Text.substring(Text.length()-56,Text.length());
+        String msg=Text.substring(0,Text.length()-56);
+        
         if (mode == 1)
             receiveECB(msg);
         else if (mode == 2)
@@ -40,6 +44,15 @@ public class Receiver {
         else if (mode == 4)
             receiveOFB(msg);
         else receiveCnt(msg);
+        
+        String HMnew;  //compute the mac for decrypted message
+        if(HM.equals(HMnew)){
+            System.out.println("The message is valid");
+        }
+        else{
+            System.out.println("The message is invalid");
+        }
+
     }
 
    static String findTwoscomplement(String s)
