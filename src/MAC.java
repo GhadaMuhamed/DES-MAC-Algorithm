@@ -49,28 +49,16 @@ public class MAC {
 		//System.out.println (binary);
 		String Si=	XOR(Keyplus,ipad); 
 		String S0=XOR(Keyplus,opad);
-		 
-		//Check if the text can be divided to l blocks of size b bits 
-		if(binary.length()%b !=0){
-			if(binary.length()<b){
-				binary=String.format("%1$" + b + "s", binary).replace(' ', '0');
-			}
-			else{
-			int x=binary.length()-(binary.length()%b);
-			String z =binary.substring(x, binary.length());
-			binary=binary.substring(0,x)+(String.format("%1$" + b + "s", z).replace(' ', '0'));
-			}
-		}
-		
+		 		
 		String Temp1=Si+binary; //append Si to the message
 		Temp1 = new String(new BigInteger(Temp1, 2).toByteArray());
 		
 		// ****************** first Hash ******************  
 		
+		
 		MessageDigest md = MessageDigest.getInstance("SHA-224");
 		md.update(Temp1.getBytes());
 		byte[] digest = md.digest();
-		//String H=new BigInteger(1,digest).toString();
 		String H=Tobinary(digest);
 		H=String.format("%1$" + b + "s", H).replace(' ', '0');
 		
@@ -84,7 +72,9 @@ public class MAC {
 		    for (byte b : mDigest) {
 		        sb.append(String.format("%02X", b));
 		    }
+		    
 		String MD =sb.toString();
+		
 		
 		return MD;
 	}

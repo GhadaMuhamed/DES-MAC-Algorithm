@@ -49,11 +49,12 @@ public class Receiver {
         String macKey = getMACKey();
         MAC HMAC = new MAC(macKey);
         String HMnew = HMAC.getHMAC(plaintext);
-
-        if (!HMnew.equals(HM)) {
-            System.out.println("The message is invalid!");
-        } else {
-            System.out.println(plaintext);
+        
+         if(HMnew.equals(HM)){
+	    	  System.out.println(plaintext);
+	      }
+        else{
+        	System.out.println("The message is invalid!");
         }
     }
 
