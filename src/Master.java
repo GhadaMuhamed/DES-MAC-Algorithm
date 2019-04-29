@@ -31,11 +31,11 @@ public class Master {
         System.out.println("Time for sending: ");
         System.out.println(MILLIS.between(t1,t2));
         System.out.println("Time for Receiving: ");
-        LocalTime t3 = java.time.LocalTime.now();
-        Receiver receiver = new Receiver();
-        receiver.receive();
-        LocalTime t4 = java.time.LocalTime.now();
-        System.out.println(MILLIS.between(t3,t4));
+        //LocalTime t3 = java.time.LocalTime.now();
+        //Receiver receiver = new Receiver();
+        //receiver.receive();
+        //LocalTime t4 = java.time.LocalTime.now();
+        //System.out.println(MILLIS.between(t3,t4));
 
     }
 }
