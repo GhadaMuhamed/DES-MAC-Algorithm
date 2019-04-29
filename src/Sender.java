@@ -167,7 +167,6 @@ public class Sender {
     public String sendCFB(String msg)throws Exception {
         String res = "";
         byte[] plainText = msg.getBytes();
-        int cnt = 0;
         Long last = IV;
         Long lastCiph = IV;
         for (int i = 0; i < plainText.length; ++i) {
