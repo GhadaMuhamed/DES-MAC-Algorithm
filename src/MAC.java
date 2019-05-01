@@ -28,6 +28,7 @@ public class MAC {
 			md.update(key.getBytes());
 			byte[] digest = md.digest();
 			Keyplus=Tobinary(digest);
+			Keyplus=String.format("%1$" + b + "s", Keyplus).replace(' ', '0');
 		}
 		
 		
