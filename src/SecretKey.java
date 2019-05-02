@@ -1,11 +1,9 @@
-import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import java.io.FileWriter;  
 import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Random;
-
 public class SecretKey {
 	
 	public void run() throws Exception{

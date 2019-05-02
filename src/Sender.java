@@ -2,26 +2,41 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.util.Random;
 import java.util.Scanner;
+
+import static java.lang.StrictMath.max;
 
 public class Sender {
 
 
-    DES des = new DES();
+    des.DES des = new des.DES();
     static final String base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    Long key, IV;
+    Long key,IV;
     int s = 8;
+    int mode= 3;
     void getKey() throws Exception {
-        Scanner sc = new Scanner(new File("DesKey.txt"));
-        key = sc.nextLong();
-        IV = sc.nextLong();
+        Random r = new Random();
+        key = r.nextLong();
+        PrintWriter pw = new PrintWriter(new File("DesKey.txt"));
+        IV = r.nextLong();
+        pw.println(key);
+        pw.close();
+        pw = new PrintWriter(new File("mode.txt"));
+        pw.println(mode);
+        pw.close();
+        if (mode!= 4){
+            pw = new PrintWriter(new File("additionalOutputs.txt"));
+            pw.print(sendECBLong(IV));
+            pw.close();
+        }
+
     }
     public Sender() throws Exception {
-     getKey();
+        getKey();
     }
 
     private String getMACKey(){  // check what is the format of the message!
-
         //Read the sent message!
         Scanner scanner;
         File file = new File("secretKey.txt");
@@ -39,23 +54,26 @@ public class Sender {
         return key;
     }
 
-    public void send(int mode) throws Exception {
+    public void send() throws Exception {
         PrintWriter cipher = new PrintWriter("sentMsg.txt");
         Scanner sc = new Scanner(new File("MessageToBeSent.txt"));
         String msg = sc.nextLine();
-        PrintWriter pw = new PrintWriter("mode.txt");
-        pw.println(mode);
-        pw.close();
+
+        byte[] plainBytes = msg.getBytes();
+        String plainBinary;
+
+        plainBinary = bytesToBinary(plainBytes);
+
         String cipherTxt = new String();
         if (mode == 1)
-            cipherTxt = sendECB(msg);
+            cipherTxt = sendECB(plainBinary);
         else if (mode == 2)
-            cipherTxt = sendCBC(msg);
+            cipherTxt = sendCBC(plainBinary);
         else if (mode == 3)
-            cipherTxt = sendCFB(msg);
+            cipherTxt = sendCFB(plainBytes);
         else if (mode == 4)
-            cipherTxt = sendOFB(msg);
-        else cipherTxt = sendCnt(msg);
+            cipherTxt = sendOFB(plainBinary);
+        else cipherTxt = sendCnt(plainBinary);
 
         SecretKey macSk = new SecretKey();
         macSk.run();
@@ -66,172 +84,190 @@ public class Sender {
         cipher.close();
     }
 
-    Long bytesToLong(byte[] ls){
+    String bytesToBinary(byte[] arr){
         String s = "";
-        for (int i=0;i<9;++i)
-            s += String.format("%7s", Integer.toBinaryString(ls[i] & 0xFF)).replace(' ', '0');
-            //System.out.println(s);
-        Long num = Long.parseLong(s,2);
-        return num;
+        for (int i=0;i<arr.length;++i){
+            s += String.format("%8s", Integer.toBinaryString(arr[i] & 0xFF)).replace(' ', '0');
+        }
+        return s;
     }
 
-    String Base64Enc(Long num){
-        String s = Long.toBinaryString(num);
-        String z = "";
-        while (s.length()+z.length()<66)
-            z +='0';
-        String bin = z+s;
-        String tmp = "";
+
+    Long binaryToLong(String s){
+        return new BigInteger(s, 2).longValue();
+    }
+
+    String longToBinary(Long num){
+            return String.format("%64s", Long.toBinaryString(num)).replace(' ', '0');
+    }
+
+    String numToBinary(Long num,Integer len){
+        return String.format("%"+ len.toString() + "s", Long.toBinaryString(num)).replace(' ', '0');
+
+    }
+    String binaryToBase64(String s){
+        String tmp ="";
         String res = "";
-        for (int i=0;i<bin.length();++i){
-            tmp += bin.charAt(i);
-            if (tmp.length() == 6){
+        String z = "";
+        for (int i=0;i<s.length();++i){
+            tmp+=s.charAt(i);
+            if (tmp.length()==6){
                 Integer b  = Integer.parseInt(tmp, 2);
                 res += base64_chars.charAt(b);
-                tmp = "";
+                tmp="";
             }
         }
+        if (tmp.length()>0){
+            while (tmp.length()<6)
+                tmp +='0';
+            Integer b  = Integer.parseInt(tmp, 2);
+            res += base64_chars.charAt(b);
+        }
+
         return res;
     }
 
-    String ToHex(Long num){
-        String s = String.format("%2X", num).replace(' ', '0');;
-        return s;
-
-    }
     public String sendOFB(String msg)throws Exception{
-        byte[] plainText = msg.getBytes();
-        byte[] ls = new byte[9];
         String res = "";
-        int cnt = 0;
-        Long nonce = IV;
-        for (int i = 0; i < plainText.length; ++i) {
-            ls[cnt++] = plainText[i];
-            if (cnt == 9) {
-                Long plainLong = bytesToLong(ls);
+        Random r = new Random();
+        Long nonce = r.nextLong();
+        PrintWriter pw = new PrintWriter(new File("additionalOutputs.txt"));
+        pw.print(nonce);
+        pw.close();
+        String tmp = "";
+        for (int i = 0; i < msg.length(); i++) {
+            tmp += msg.charAt(i);
+            if (tmp.length() == 64){
+                Long plainLong = binaryToLong(tmp);
                 Long enc = des.encrypt(nonce, key);
                 nonce = enc;
                 enc ^= plainLong;
-                res += Base64Enc(enc);
-                cnt = 0;
+                res += longToBinary(enc);
+                tmp = "";
             }
         }
-
-        if (cnt > 0) {
-            for (int i = cnt; i < 9; ++i)
-                ls[i] = 0;
-            Long plainLong = bytesToLong(ls);
+        int bit = 0;
+        if (tmp.length() > 0) {
+            bit = tmp.length()-1;
+            Long plainLong = binaryToLong(tmp);
             Long enc = des.encrypt(nonce, key);
+            enc >>>= (64 - bit - 1);
             enc ^= plainLong;
-            res += Base64Enc(enc);
+            res += numToBinary(enc, bit+1);
         }
-        return res;
+        Integer flag = 0;
+        if (tmp.length()==0)
+            flag = 1;
+        return flag.toString() + base64_chars.charAt(bit) + binaryToBase64(res);
     }
 
 
-    public String sendCnt(String msg)throws Exception {
-        byte[] plainText = msg.getBytes();
-        byte[] ls = new byte[9];
-        int cnt = 0;
+    public String sendCnt(String msg)throws Exception{
         String res = "";
+        String tmp = "";
         BigInteger bg = new BigInteger("18446744073709551615");
         Long counter = IV;
-        for (int i = 0; i < plainText.length; ++i) {
-            ls[cnt++] = plainText[i];
-            if (cnt == 9) {
-                Long plainLong = bytesToLong(ls);
-                //toBeEnc ^= last;
+
+        for (int i = 0; i < msg.length(); ++i) {
+            tmp += msg.charAt(i);
+            if (tmp.length() == 64) {
+                Long plainLong = binaryToLong(tmp);
                 Long enc = des.encrypt(counter, key);
                 if (bg.equals(counter))
                     counter = Long.valueOf(0);
                 else counter++;
                 enc ^= plainLong;
-                res += Base64Enc(enc);
-                cnt = 0;
+                res += longToBinary(enc);
+                tmp = "";
             }
         }
-        if (cnt > 0) {
-            for (int i = cnt; i < 9; ++i)
-                ls[i] = 0;
-            Long plainLong = bytesToLong(ls);
-            //toBeEnc ^= last;
+        int bit = max(tmp.length()-1,0);
+        if (tmp.length() > 0) {
+            Long plainLong = binaryToLong(tmp);
             Long enc = des.encrypt(counter, key);
             counter++;
+            enc >>>= (64 - bit - 1);
             enc ^= plainLong;
-            res += Base64Enc(enc);
+            res += numToBinary(enc,bit+1);
         }
-        return res;
+        Integer flag = 0;
+        if (tmp.length()==0)
+            flag = 1;
+        return flag.toString() + base64_chars.charAt(bit) + binaryToBase64(res);
+
     }
 
 
-    public String sendCFB(String msg)throws Exception {
+    public String sendCFB(byte[] msg)throws Exception {
         String res = "";
-        byte[] plainText = msg.getBytes();
         Long last = IV;
-        Long lastCiph = IV;
-        for (int i = 0; i < plainText.length; ++i) {
-            byte cur = plainText[i];
+        Long lastCiph = last;
+        for (int i = 0; i < msg.length; i++) {
+            byte cur = msg[i];
             last <<= s * ((i>0)?1:0);
             last |= (i>0?lastCiph:0);
             Long enc = des.encrypt(last, key);
             enc >>>= (64-8);
             enc ^= cur;
             lastCiph = enc;
-            res += ToHex(enc);
+            res += numToBinary(enc,8);
         }
-        return res;
+        return binaryToBase64(res);
     }
 
 
     public String sendCBC(String msg)throws Exception {
         String res = "";
-        byte[] plainText = msg.getBytes();
-        byte[] ls = new byte[9];
-        int cnt = 0;
         Long last = IV;
-        for (int i = 0; i < plainText.length; ++i) {
-            ls[cnt++] = plainText[i];
-            if (cnt == 9) {
-                Long toBeEnc = bytesToLong(ls);
+        String tmp = "";
+        for (int i = 0; i < msg.length(); ++i) {
+            tmp += msg.charAt(i);
+            if (tmp.length() == 64) {
+                Long toBeEnc = binaryToLong(tmp);
                 toBeEnc ^= last;
                 Long enc = des.encrypt(toBeEnc, key);
                 last = enc;
-                res+=Base64Enc(enc);
-                cnt = 0;
+                res += longToBinary(enc);
+                tmp = "";
             }
         }
-        if (cnt > 0) {
-            for (int i = cnt; i < 9; ++i)
-                ls[i] = 0;
-            Long toBeEnc = bytesToLong(ls);
+        if (tmp.length() > 0) {
+            Long toBeEnc = binaryToLong(tmp);
             toBeEnc ^= last;
             Long enc = des.encrypt(toBeEnc, key);
-            res+=Base64Enc(enc);
+            res += longToBinary(enc);
         }
-        return res;
+
+        return binaryToBase64(res);
     }
     public String sendECB(String msg) throws Exception {
-        byte[] plainText = msg.getBytes();
         String res = "";
-        byte[] ls = new byte[9];
-        int cnt = 0;
-        for (int i = 0; i < plainText.length; ++i) {
-            ls[cnt++] = plainText[i];
-            if (cnt == 9) {
-                Long num = bytesToLong(ls);
-                Long enc = des.encrypt(bytesToLong(ls), key);
-                res += Base64Enc(enc);
-                cnt = 0;
+        String tmp = "";
+        for (int i = 0; i < msg.length(); ++i) {
+            tmp += msg.charAt(i);
+            if (tmp.length() == 64) {
+                Long num = binaryToLong(tmp);
+                Long enc = des.encrypt(num, key);
+                res += longToBinary(enc);
+                tmp = "";
             }
         }
-        if (cnt > 0) {
-            for (int i = cnt; i < 9; ++i)
-               ls[i] = 0;
-            Long enc = des.encrypt(bytesToLong(ls), key);
-            res += Base64Enc(enc);
+        if (tmp.length() > 0) {
+            Long enc = des.encrypt(binaryToLong(tmp), key);
+            res += longToBinary(enc);
         }
-       return res;
+        return binaryToBase64(res);
     }
 
 
+    public String sendECBLong(Long num) throws Exception {
+                Long enc = des.encrypt(num, key);
+        return binaryToBase64(longToBinary(enc));
+    }
+
+    public static void main(String[] args)throws Exception{
+        Sender sender = new Sender();
+        sender.send();
+
+    }
 }
